@@ -1,0 +1,20 @@
+<resources>
+    <string name="app_name">VETS</string>
+    <string name="app_fullname">Vertical Education Technology Sanstha</string>
+    <string name="devlop_name">Developed by InfoCentroid
+        <!--<a href="https://www.infocentroid.com">https://www.infocentroid.com</a>-->
+    </string>
+
+    <string-array name="city">
+        <item>Bhopal  </item>
+        <item>Indore  </item>
+        <item>Devas  </item>
+    </string-array>
+
+    <string-array name="category">
+        <item>A  </item>
+        <item>B </item>
+        <item>C </item>
+    </string-array>
+    <string name="title_activity_maps">Map</string>
+</resources>
