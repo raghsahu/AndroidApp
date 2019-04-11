@@ -183,20 +183,26 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
                     Address=mAddress.getText().toString();
 
                     if (!City.isEmpty() && !Category.isEmpty() && !Description.isEmpty() && !Poc.isEmpty() && !Mobile.isEmpty()
-                    && !Placename.isEmpty() && !Lat.isEmpty() && !Long.isEmpty() && !Address.isEmpty()){
-                        if (destination.exists())
-                        {
-                            if (Connectivity.isNetworkAvailable(MainLocation.this)) {
-                                new SurveyExecuteTask().execute();
-                            }else {
-                                Toast.makeText(MainLocation.this, "No Internet", Toast.LENGTH_SHORT).show();
+                    && !Placename.isEmpty() && !Lat.isEmpty() && !Long.isEmpty() && !Address.isEmpty()) {
+                        try {
+                            if (destination.exists()) {
+                                if (Connectivity.isNetworkAvailable(MainLocation.this)) {
+                                    new SurveyExecuteTask().execute();
+                                } else {
+                                    Toast.makeText(MainLocation.this, "No Internet", Toast.LENGTH_SHORT).show();
+                                }
+                            } else {
+                                Toast.makeText(MainLocation.this, "Something wrong", Toast.LENGTH_SHORT).show();
                             }
-                        }else {
-                            Toast.makeText(MainLocation.this, "something wrong", Toast.LENGTH_SHORT).show();
+                        }catch (Exception e)
+                        {
+                            Toast.makeText(MainLocation.this, "Please select image", Toast.LENGTH_SHORT).show();
                         }
 
+                        }else{
+                            Toast.makeText(MainLocation.this, "Please enter all field", Toast.LENGTH_SHORT).show();
+                        }
 
-                    }
 
                 }
             });
