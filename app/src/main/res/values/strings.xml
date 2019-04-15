@@ -7,8 +7,6 @@
 
     <string-array name="city">
         <item>Bhopal  </item>
-        <item>Indore  </item>
-        <item>Devas  </item>
     </string-array>
 
     <string-array name="category">

@@ -32,6 +32,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -64,9 +65,11 @@ import java.util.concurrent.BlockingQueue;
 public class MainLocation extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener {
 
         private static final String TAG = "MainLocation";
-        private GoogleApiClient mGoogleApiClient;
+    private static final int REQUEST_TAKE_GALLERY_VIDEO =2 ;
+    private GoogleApiClient mGoogleApiClient;
         private Location mLocation;
         private LocationManager mLocationManager;
+    ProgressDialog dialog;
 
         private LocationRequest mLocationRequest;
         private com.google.android.gms.location.LocationListener listener;
@@ -89,12 +92,16 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
     HashMap<Integer, CityModel> CityHashMap=new HashMap<Integer, CityModel>();
 
     private int REQUEST_CAMERA = 0, SELECT_FILE = 1;
-     Button btnSelect, btn_submit;
+     Button btnSelect, btn_submit, btn_video_select;
+     TextView text_video_path;
      ImageView ivImage,iv_logout;
      String userChoosenTask;
     String output;
-     File destination;
+     File destination, vid;
      SessionManager manager;
+   String filemanagerstring;
+     String selectedVideoPath;
+    public Activity donut_progress;
 
     @Override
         protected void onCreate(Bundle savedInstanceState) {
@@ -115,6 +122,8 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
             iv_logout = (ImageView) findViewById(R.id.logout);
             btnSelect = (Button) findViewById(R.id.btn_img);
             btn_submit = (Button) findViewById(R.id.btn_submit);
+            btn_video_select=findViewById(R.id.btn_img1);
+            text_video_path=findViewById(R.id.post_video);
             spinCity=findViewById(R.id.spin_city);
            category =  findViewById((R.id.category));
            description =  findViewById((R.id.description));
@@ -122,7 +131,7 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
            mobile =  findViewById((R.id.mobile));
            placename =  findViewById((R.id.place));
 
-            new GetCityExecuteTask().execute();
+           // new GetCityExecuteTask().execute();
 
             btnSelect.setOnClickListener(new View.OnClickListener() {
 
@@ -131,6 +140,15 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
                     selectImage();
                 }
             });
+            //*******************video upload*********************
+            btn_video_select.setOnClickListener(new View.OnClickListener() {
+
+                @Override
+                public void onClick(View v) {
+                    selectVideo();
+                }
+            });
+            //***********************************************
             iv_logout.setOnClickListener(new View.OnClickListener() {
 
                 @Override
@@ -182,25 +200,35 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
                     Long=mLongitudeTextView.getText().toString();
                     Address=mAddress.getText().toString();
 
-                    if (!City.isEmpty() && !Category.isEmpty() && !Description.isEmpty() && !Poc.isEmpty() && !Mobile.isEmpty()
-                    && !Placename.isEmpty() && !Lat.isEmpty() && !Long.isEmpty() && !Address.isEmpty()) {
+                    if (!Poc.isEmpty() && !Lat.isEmpty() && !Long.isEmpty() ) {
                         try {
-                            if (destination.exists()) {
+//                            if (destination != null) {
                                 if (Connectivity.isNetworkAvailable(MainLocation.this)) {
+                                   // vid = new File(selectedVideoPath);
                                     new SurveyExecuteTask().execute();
                                 } else {
                                     Toast.makeText(MainLocation.this, "No Internet", Toast.LENGTH_SHORT).show();
                                 }
-                            } else {
-                                Toast.makeText(MainLocation.this, "Something wrong", Toast.LENGTH_SHORT).show();
-                            }
-                        }catch (Exception e)
-                        {
-                            Toast.makeText(MainLocation.this, "Please select image", Toast.LENGTH_SHORT).show();
+                           // }
+//                            else {
+//                                if (selectedVideoPath !=null){
+//                                    new SurveyExecuteTask().execute();
+//                                }else {
+//                                    Toast.makeText(MainLocation.this, "Image not found", Toast.LENGTH_SHORT).show();
+//                                }
+
+
+                           // }
+                        }
+                          catch (Exception e){
+                        System.out.print(e);
+
+                           // Toast.makeText(MainLocation.this, "Please select image", Toast.LENGTH_SHORT).show();
+
                         }
 
                         }else{
-                            Toast.makeText(MainLocation.this, "Please enter all field", Toast.LENGTH_SHORT).show();
+                            Toast.makeText(MainLocation.this, "Please enter Name/POC", Toast.LENGTH_SHORT).show();
                         }
 
 
@@ -216,10 +244,42 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
             mLocationManager = (LocationManager)this.getSystemService(Context.LOCATION_SERVICE);
 
             checkLocation(); //check whether location service is enable or not in your  phone
-            //*******************************************
+            //************************************************************************************
         }
 
-        @Override
+    private void selectVideo() {
+
+//        Intent intent = new Intent();
+//        intent.setType("video/*");
+//        intent.setAction(Intent.ACTION_GET_CONTENT);
+
+        Intent galleryIntent = new Intent(Intent.ACTION_PICK,
+                android.provider.MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
+        startActivityForResult(galleryIntent, REQUEST_TAKE_GALLERY_VIDEO);
+
+       //
+        // startActivityForResult(Intent.createChooser(intent,"Select Video"),REQUEST_TAKE_GALLERY_VIDEO);
+    }
+
+    // UPDATED!
+    public String getPath(Uri uri) {
+        String[] projection = { MediaStore.Video.Media.DATA };
+        Cursor cursor = getContentResolver().query(uri, projection, null, null, null);
+        if (cursor != null) {
+            // HERE YOU WILL GET A NULLPOINTER IF CURSOR IS NULL
+            // THIS CAN BE, IF YOU USED OI FILE MANAGER FOR PICKING THE MEDIA
+            int column_index = cursor
+                    .getColumnIndexOrThrow(MediaStore.Video.Media.DATA);
+            cursor.moveToFirst();
+            return cursor.getString(column_index);
+        } else
+            return null;
+    }
+
+
+
+//***********************************************************************************************
+    @Override
         public void onConnected(Bundle bundle) {
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 // TODO: Consider calling
@@ -403,10 +463,15 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
 
     private void galleryIntent()
     {
-        Intent intent = new Intent();
-        intent.setType("image/*");
-        intent.setAction(Intent.ACTION_GET_CONTENT);//
-        startActivityForResult(Intent.createChooser(intent, "Select File"),SELECT_FILE);
+//        Intent intent = new Intent();
+//        intent.setType("image/*");
+//        intent.setAction(Intent.ACTION_GET_CONTENT);//
+//        intent.addCategory(Intent.CATEGORY_APP_GALLERY);
+//        startActivityForResult(Intent.createChooser(intent, "Select File"),SELECT_FILE);
+
+        Intent i = new Intent(Intent.ACTION_PICK, android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+        // Start new activity with the LOAD_IMAGE_RESULTS to handle back the results when image is picked from the Image Gallery.
+        startActivityForResult(i, SELECT_FILE);
     }
 
     private void cameraIntent()
@@ -429,6 +494,25 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
             }
             else if (requestCode == REQUEST_CAMERA)
                 onCaptureImageResult(data);
+        }
+        //**************************video
+        if (resultCode == RESULT_OK) {
+            if (requestCode == REQUEST_TAKE_GALLERY_VIDEO) {
+                Uri selectedVideoUri = data.getData();
+                // OI FILE Manager
+                filemanagerstring = selectedVideoUri.getPath();
+
+                // MEDIA GALLERY
+                selectedVideoPath = new String(getPath(selectedVideoUri));
+                if (selectedVideoPath != null) {
+                    Toast.makeText(this, "video path- "+selectedVideoPath, Toast.LENGTH_SHORT).show();
+                    text_video_path.setText( selectedVideoPath);
+//                    Intent intent = new Intent(MainLocation.this,
+//                            VideoplayAvtivity.class);
+//                    intent.putExtra("path", selectedImagePath);
+//                    startActivity(intent);
+                }
+            }
         }
     }
 
@@ -552,11 +636,17 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
         }
     }
 
-    private class SurveyExecuteTask extends AsyncTask<Void, Void, String> {
+    private class SurveyExecuteTask extends AsyncTask<Void, Long, String> {
 
-        ProgressDialog dialog;
+
         String result = "";
-      //  File Image;
+
+         double mFileLen;
+
+//        public SurveyExecuteTask(File vid) {
+//            this.mFileLen = vid.length();
+//        }
+        //  File Image;
 
 //        public ImageUploadTask(File imgFile) {
 //            this.Image = imgFile;
@@ -566,37 +656,80 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
         @Override
         protected void onPreExecute() {
             dialog = new ProgressDialog(MainLocation.this);
-            dialog.setMessage("Processing");
-
-            dialog.setCancelable(true);
+           dialog.setMessage("Processing");
+           // dialog.setMax(100);
+            dialog.show();
+            dialog.setCancelable(false);
+           // dialog.setProgress(0);
+//            dialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
             dialog.show();
             super.onPreExecute();
         }
 
+        @Override
+        protected void onProgressUpdate(Long... values) {
+            int percent = (int) ((100.0 * (double) values[0] / mFileLen) + 0.5);
+            dialog.setProgress(percent);
+         Log.d("progerr" , ""+percent );
+            super.onProgressUpdate(values);
+        }
 
         @Override
         protected String doInBackground(Void... params) {
             try {
-
+                Log.d("gcdfg",""+selectedVideoPath);
                 org.apache.http.entity.mime.MultipartEntity entity = new MultipartEntity(
                         HttpMultipartMode.BROWSER_COMPATIBLE);
                 String id= AppPreference.getUserid(MainLocation.this);
+                if(selectedVideoPath !=null) {
+                    entity.addPart("video", new FileBody(new File(selectedVideoPath)));
+                }if(destination !=null)
+                {
+                    entity.addPart("file", new FileBody(destination));
+                }
+                if(selectedVideoPath !=null && destination !=null)
+                {
+                    entity.addPart("video", new FileBody(new File(selectedVideoPath)));
+                    entity.addPart("file", new FileBody(destination));
+                }
 
-                entity.addPart("file", new FileBody(destination));
-                entity.addPart("city", new StringBody(City));
-                entity.addPart("category",new StringBody(Category));
-                entity.addPart("description",new StringBody(Description));
-                entity.addPart("poc",new StringBody(Poc));
-                entity.addPart("mobile",new StringBody(Mobile));
-                entity.addPart("place_name",new StringBody(Placename));
-                entity.addPart("lat",new StringBody(Lat));
-                entity.addPart("long",new StringBody(Long));
-                entity.addPart("full_address",new StringBody(Address));
-                entity.addPart("emp_id",new StringBody(id));
 
-                result = Utilities.postEntityAndFindJson("http://ihisaab.in/vets/Api/registration_vets", entity);
+                    entity.addPart("city", new StringBody(City));
+                    entity.addPart("category",new StringBody(Category));
+                    entity.addPart("description",new StringBody(Description));
+                    entity.addPart("poc",new StringBody(Poc));
+                    entity.addPart("mobile",new StringBody(Mobile));
+                    entity.addPart("place_name",new StringBody(Placename));
+                    entity.addPart("lat",new StringBody(Lat));
+                    entity.addPart("long",new StringBody(Long));
+                    entity.addPart("full_address",new StringBody(Address));
+                    entity.addPart("emp_id",new StringBody(id));
 
-                return result;
+//                }else {
+
+//                    if (destination !=null) {
+//                        entity.addPart("file", new FileBody(destination));
+//                    }
+//                    entity.addPart("city", new StringBody(City));
+//                    entity.addPart("category",new StringBody(Category));
+//                    entity.addPart("description",new StringBody(Description));
+//                    entity.addPart("poc",new StringBody(Poc));
+//                    entity.addPart("mobile",new StringBody(Mobile));
+//                    entity.addPart("place_name",new StringBody(Placename));
+//                    entity.addPart("lat",new StringBody(Lat));
+//                    entity.addPart("long",new StringBody(Long));
+//                    entity.addPart("full_address",new StringBody(Address));
+//                    entity.addPart("emp_id",new StringBody(id));
+//                    entity.addPart("video", new FileBody(new File(selectedVideoPath)));
+               // }
+                //                for(int i =0;i<mFileLen;i++)
+//                {
+                   // dialog.setProgress(i);
+                    result = Utilities.postEntityAndFindJson("http://ihisaab.in/vets/Api/registration_vets", entity);
+
+                    return result;
+               // }
+
 
             } catch (Exception e) {
                 // something went wrong. connection with the server error
@@ -607,18 +740,18 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
 
         @Override
         protected void onPostExecute(String result) {
-           // Toast.makeText(MainLocation.this, ""+result, Toast.LENGTH_LONG).show();
+           // Toast.makeText(MainLocation.this, "res is "+result, Toast.LENGTH_LONG).show();
 
             //String result1 = result;
             if (result != null) {
 
-                dialog.dismiss();
+
                 Log.e("result_Image", result);
                 try {
                     JSONObject object = new JSONObject(result);
-                    String img = object.getString("responce");
-                    String userid = object.getString("user_id");
-                    if (img.equals("true")) {
+                    String responce = object.getString("responce");
+                   // String img = object.getString("img");
+                    if (responce.equals("true")) {
 
                         Toast.makeText(MainLocation.this, "Success", Toast.LENGTH_LONG).show();
 
@@ -639,11 +772,19 @@ public class MainLocation extends AppCompatActivity implements GoogleApiClient.C
                 }
 
             } else {
-                dialog.dismiss();
+               dialog.dismiss();
                 //  Toast.makeText(Registration.this, "No Response From Server", Toast.LENGTH_LONG).show();
             }
 
         }
     }
 
+    @Override
+    protected void onDestroy() {
+        if(dialog.isShowing() && dialog !=null)
+        {
+            dialog.dismiss();
+        }
+        super.onDestroy();
+    }
 }
